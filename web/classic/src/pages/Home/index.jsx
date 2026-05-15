@@ -24,6 +24,8 @@ import {
   Input,
   ScrollList,
   ScrollItem,
+  Tabs,
+  TabPane,
 } from '@douyinfe/semi-ui';
 import { API, showError, copy, showSuccess } from '../../helpers';
 import { useIsMobile } from '../../hooks/common/useIsMobile';
@@ -64,6 +66,26 @@ import {
 } from '@lobehub/icons';
 
 const { Text } = Typography;
+
+const CodeBlock = ({ code, t }) => {
+  return (
+    <div className="relative group mt-4 text-left">
+      <pre className="bg-[#1e1e1e] text-[#d4d4d4] p-4 rounded-xl overflow-x-auto text-sm font-mono leading-relaxed border border-semi-color-border shadow-sm">
+        <code>{code}</code>
+      </pre>
+      <Button
+        theme="solid"
+        icon={<IconCopy />}
+        className="absolute top-6 right-4 opacity-0 group-hover:opacity-100 transition-opacity !bg-gray-700 hover:!bg-gray-600 !text-white"
+        onClick={() => {
+          copy(code).then((ok) => {
+            if (ok) showSuccess(t('已复制代码'));
+          });
+        }}
+      />
+    </div>
+  );
+};
 
 const Home = () => {
   const { t, i18n } = useTranslation();
@@ -147,6 +169,67 @@ const Home = () => {
     }, 3000);
     return () => clearInterval(timer);
   }, [endpointItems.length]);
+
+  const pythonCode = `# Please install OpenAI SDK first: \`pip3 install openai\`
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    api_key=os.environ.get('DEEPSEEK_API_KEY'),
+    base_url="${serverAddress}/v1"
+)
+
+response = client.chat.completions.create(
+    model="deepseek-v4-pro",
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant"},
+        {"role": "user", "content": "Hello"},
+    ],
+    stream=False,
+    reasoning_effort="high",
+    extra_body={"thinking": {"type": "enabled"}}
+)
+
+print(response.choices[0].message.content)`;
+
+  const nodeCode = `// Please install OpenAI SDK first: \`npm install openai\`
+import OpenAI from "openai";
+
+const openai = new OpenAI({
+  apiKey: process.env.DEEPSEEK_API_KEY,
+  baseURL: "${serverAddress}/v1"
+});
+
+async function main() {
+  const completion = await openai.chat.completions.create({
+    model: "deepseek-v4-pro",
+    messages: [
+        { role: "system", content: "You are a helpful assistant" },
+        { role: "user", content: "Hello" },
+    ],
+    stream: false,
+    reasoning_effort: "high",
+    extra_body: { thinking: { type: "enabled" } }
+  });
+
+  console.log(completion.choices[0].message.content);
+}
+
+main();`;
+
+  const curlCode = `curl ${serverAddress}/v1/chat/completions \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer $DEEPSEEK_API_KEY" \\
+  -d '{
+    "model": "deepseek-v4-pro",
+    "messages": [
+      {"role": "system", "content": "You are a helpful assistant"},
+      {"role": "user", "content": "Hello"}
+    ],
+    "stream": false,
+    "reasoning_effort": "high",
+    "extra_body": {"thinking": {"type": "enabled"}}
+  }'`;
 
   return (
     <div className='w-full overflow-x-hidden'>
@@ -328,6 +411,31 @@ const Home = () => {
                         30+
                       </Typography.Text>
                     </div>
+                  </div>
+                </div>
+
+                {/* 接入代码示例 */}
+                <div className='mt-16 md:mt-24 w-full max-w-4xl mx-auto text-left pb-16'>
+                  <div className='mb-6 flex flex-col items-center justify-center text-center'>
+                    <h2 className='text-2xl md:text-3xl font-bold text-semi-color-text-0'>
+                      {t('快速接入 DeepSeek 等大模型')}
+                    </h2>
+                    <p className='text-semi-color-text-2 mt-2 max-w-2xl'>
+                      {t('完全兼容 OpenAI 接口规范，只需修改 Base URL 和 API Key 即可无缝切换，支持调用 DeepSeek 的思考能力。')}
+                    </p>
+                  </div>
+                  <div className="p-1 rounded-2xl bg-semi-color-fill-0 border border-semi-color-border">
+                    <Tabs type="line" className="px-4 pt-2">
+                      <TabPane tab="Python" itemKey="python">
+                        <CodeBlock code={pythonCode} t={t} />
+                      </TabPane>
+                      <TabPane tab="Node.js" itemKey="nodejs">
+                        <CodeBlock code={nodeCode} t={t} />
+                      </TabPane>
+                      <TabPane tab="cURL" itemKey="curl">
+                        <CodeBlock code={curlCode} t={t} />
+                      </TabPane>
+                    </Tabs>
                   </div>
                 </div>
               </div>
